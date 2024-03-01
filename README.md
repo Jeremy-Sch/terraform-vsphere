@@ -1,76 +1,66 @@
-# Terraform VMware vSphere Deployment
+# Terraform VMware vSphere Linux Virtual Machine Deployment
 
-Ce projet Terraform permet de déployer des machines virtuelles sur VMware vSphere avec une configuration flexible.
+This Terraform project is designed to deploy linux virtual machines on VMware vSphere. It includes configurations for vCenter, virtual machine settings, and customization options.
 
-## Configuration
+## Prerequisites
 
-Le fichier `main.tf` contient la configuration principale. 
-Le fichier `variables.tf` est utilisé pour déclarer les variables utilisées.
-Le fichier `output.tf` est utilisé pour définir les sorties (outputs) que vous souhaitez récupérer après le déploiement de l'infrastructure.
-Le fichier `vsphere.tfvars` est utilisé pour spécifier les informations de connexion à vSphere.
-Le fichier `terraform.tfvars` est utilisé pour spécifier des valeurs par défaut aux variables définies dans le fichier `variables.tf`.
+Before you begin, ensure you have the following:
 
-### Variables
+- [Terraform](https://www.terraform.io/) installed
+- Access to a VMware vSphere environment
+- Required credentials and permissions for vCenter
 
-#### Identifiants et Connexion
+## Project Structure
 
-- `vsphere_user`: Nom d'utilisateur VMware vSphere 
-- `vsphere_password`: Mot de passe VMware vSphere 
-- `vsphere_vcenter`: FQDN / IP du serveur VMWare vCenter 
-- `vsphere_unverified_ssl`: Vérifie si le certificat SSL de l'interface utilisateur du serveur VMware vCenter est fourni par une autorité de certification de confiance 
+- `main.tf`: Main configuration file containing the infrastructure setup.
+- `variables.tf`: Declaration of variables used in the project.
+- `output.tf`: Configuration for output values.
+- `terraform.tfvars`: Variable values specific to your environment.
+- `vsphere.tfvars`: Variable values for vSphere configuration.
 
-#### Détails de l'Infrastructure
+## Variables
 
-- `vsphere_datacenter`: Datacenter VMware vSphere
-- `vsphere_cluster`: Cluster VMware vSphere
-- `vsphere_template_folder`: Dossier du modèle VMware vSphere
+### VMware vCenter
 
-#### Configuration de la Machine Virtuelle
+- `vsphere_user`: VMware vSphere Username
+- `vsphere_password`: VMware vSphere Password
+- `vsphere_vcenter`: VMWare vCenter Server FQDN / IP
+- `vsphere_unverified_ssl`: Check if the SSL certificate of the VMware vCenter Server UI has been provided by a trusted Root CA (Default: `false`)
+- `vsphere_datacenter`: VMWare vSphere Datacenter
+- `vsphere_cluster`: VMWare vSphere Cluster
+- `vsphere_template_folder`: VMware vSphere Template Folder
 
-##### Paramètres Généraux
+### Virtual Machine
 
-- `vm_name`: Nom des machines virtuelles vSphere et nom d'hôte de la machine
-- `vm_datastore`: Datastore à utiliser pour la VM
-- `vm_network`: Réseau à utiliser pour la VM
-- `vm_linked_clone`: Utiliser le clonage lié pour créer la machine virtuelle vSphere à partir du modèle (par défaut : false, bool)
+- `vm_name`: The name of the vSphere virtual machine and the hostname of the machine
+- `vm_datastore`: The name of the VMware vSphere Datastore where the virtual machine will be stored
+- `vm_network`: The name of the VMware vSphere Network to which the virtual machine will be connected
+- `vm_linked_clone`: Indicates whether to use a linked clone to create the vSphere virtual machine from the template (Default: `false`)
+- `vm_cpu`: Number of vCPU allocated to the VM (Default: `2`)
+- `vm_cores_per_socket`: Number of cores per CPU socket allocated to the VM (Default: `1`)
+- `vm_ram`: Amount of RAM allocated to the VM (in MB) (Default: `2048`)
+- `vm_disk_size`: Disk size allocated to the VM (in GB) (Default: `30`)
+- `vm_guest_id`: The vCenter GuestOS ID, which determines the operating system type
+- `vm_template_name`: The name of the template used to create the virtual machine in VMware vSphere
+- `vm_domain`: The domain name for the host. This, along with `vm_name`, makes up the FQDN of the VM (Nullable)
+- `vm_dns_server_list`: A list of DNS servers to be configured for the virtual machine (Default: `["8.8.8.8", "8.8.4.4"]`)
+- `vm_dns_suffix_list`: A list of DNS suffixes to be configured for the virtual machine (Nullable)
+- `vm_ipv4_address`: The IPv4 address to be assigned to the virtual machine
+- `vm_ipv4_gateway`: The IPv4 gateway address for the virtual machine
+- `vm_ipv4_netmask`: The IPv4 netmask for the virtual machine, specified in CIDR notation (Default: `24`)
+- `vm_ssh_user`: The SSH username used for connecting to the virtual machine during provisioning
+- `vm_ssh_user_private_key`: The path to the private key file used for SSH authentication to the virtual machine during provisioning
+- `vm_tz`: Sets the time zone for the virtual machine (Default: `Europe/Paris`)
 
-##### Allocation des Ressources
+## Usage
 
-- `cpu`: Nombre de vCPU allouées à la VM (par défaut : 2)
-- `cores_per_socket`: Nombre de cœurs par CPU alloués à la VM (par défaut : 1)
-- `ram`: Quantité de RAM allouée à la VM (par défaut : 2048 Mo)
-- `disksize`: Taille du disque alloué à la VM (en Go, par défaut : 30 Go)
+1. Clone the repository.
+2. Navigate to the project directory.
+3. Run `terraform init` to initialize the project.
+4. Create a `terraform.tfvars` file and fill in the required variable values.
+5. Run `terraform apply` to deploy the infrastructure.
 
-##### Configuration avancée
+## Outputs
 
-- `vm_guest_id`: L'ID de l'invité vCenter, qui détermine le type de système d'exploitation
-- `vm_template_name`: Le modèle utilisé pour créer la VM
-- `vm_domain`: Le nom de domaine pour l'hôte. Cela, ainsi que host_name, constituent le FQDN de la VM (nullable)
-- `dns_server_list`: Liste des serveurs DNS (par défaut : ["8.8.8.8", "8.8.4.4"])
-- `dns_search_domain`: Définir le domaine de recherche DNS pour la VM (nullable)
-- `ipv4_address`: Définir l'adresse IPv4 pour la VM
-- `ipv4_gateway`: Définir la passerelle IPv4 pour la VM
-- `ipv4_netmask`: Définir le masque de sous-réseau IPv4 pour la VM. Utilisez la notation CIDR (par défaut : 24)
-- `ssh_username`: Nom d'utilisateur SSH pour accéder à la VM 
-- `public_key`: Spécifiez le chemin vers le fichier de clé publique. Le contenu sera ajouté au fichier authorized_keys de l'utilisateur SSH dans la VM
-- `vm_tz`: Définit le fuseau horaire (par défaut : "Europe/Paris")
+- Once deployed, the project provides output values such as VM name and IP address.
 
-N'hésitez pas à personnaliser ces variables en fonction de vos besoins spécifiques. Consultez les variables correspondantes dans le fichier `variables.tf` pour plus de détails.
-
-## Utilisation
-
-1. Clonez ce dépôt Git localement :
-```bash
-git clone https://github.com/Jeremy-Sch/terraform-vsphere.git
-```
-```bash
-cd terraform-vsphere
-```
-2. Initialisez Terraform :
-```bash
-terraform init
-```
-3. Exécutez Terraform pour créer les ressources :
-```bash
-terraform apply -var-file="vsphere.tfvars"
-```
