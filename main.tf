@@ -1,33 +1,3 @@
-terraform {
-  required_providers {
-    vsphere = {
-      source = "hashicorp/vsphere"
-    }
-  }
-  required_version = ">= 0.13"
-}
-
-provider "vsphere" {
-  user                 = var.vsphere_user
-  password             = var.vsphere_password
-  vsphere_server       = var.vsphere_vcenter
-  allow_unverified_ssl = var.vsphere_unverified_ssl
-}
-
-locals {
-  templatevars = {
-    name         = var.vm_name,
-    ipv4_address = var.ipv4_address,
-    ipv4_gateway = var.ipv4_gateway,
-    ipv4_netmask = var.ipv4_netmask,
-    dns_server_1 = var.dns_server_list[0],
-    dns_server_2 = var.dns_server_list[1],
-    dns_search_domain = var.dns_search_domain,
-    public_key = file(var.public_key),
-    ssh_username = var.ssh_username
-  }
-}
-
 data "vsphere_datacenter" "dc" {
   name = var.vsphere_datacenter
 }
@@ -52,13 +22,17 @@ data "vsphere_virtual_machine" "template" {
   datacenter_id = data.vsphere_datacenter.dc.id
 }
 
+resource "tls_private_key" "ssh_key" {
+  algorithm = "ED25519"
+}
+
 resource "vsphere_virtual_machine" "vm" {
-  name             = var.vm_name
-  resource_pool_id = data.vsphere_compute_cluster.cluster.resource_pool_id
-  datastore_id     = data.vsphere_datastore.datastore.id
-  num_cpus             = var.cpu
-  num_cores_per_socket = var.cores_per_socket
-  memory               = var.ram
+  name                 = var.vm_name
+  resource_pool_id     = data.vsphere_compute_cluster.cluster.resource_pool_id
+  datastore_id         = data.vsphere_datastore.datastore.id
+  num_cpus             = var.vm_cpu
+  num_cores_per_socket = var.vm_cores_per_socket
+  memory               = var.vm_ram
   guest_id             = var.vm_guest_id
   network_interface {
     network_id   = data.vsphere_network.network.id
@@ -68,41 +42,44 @@ resource "vsphere_virtual_machine" "vm" {
     label            = "${var.vm_name}-disk"
     thin_provisioned = data.vsphere_virtual_machine.template.disks.0.thin_provisioned
     eagerly_scrub    = data.vsphere_virtual_machine.template.disks.0.eagerly_scrub
-    size             = var.disksize == "" ? data.vsphere_virtual_machine.template.disks.0.size : var.disksize 
+    size             = var.vm_disk_size == "" ? data.vsphere_virtual_machine.template.disks.0.size : var.vm_disk_size 
   }
-  #cdrom {
-    #client_device = true
-  #}
   clone {
     template_uuid = data.vsphere_virtual_machine.template.id
+    linked_clone = var.vm_linked_clone
     customize {
       linux_options {
         host_name       = var.vm_name
-        domain		= var.vm_domain
+        domain		    = var.vm_domain
         time_zone       = var.vm_tz
-        script_text     = file("./templates/customization_script.sh") 
       }
       network_interface {
-        ipv4_address	= var.ipv4_address 
-        ipv4_netmask	= var.ipv4_netmask
+        ipv4_address	= var.vm_ipv4_address 
+        ipv4_netmask	= var.vm_ipv4_netmask
       }
-      ipv4_gateway      = var.ipv4_gateway
-      dns_server_list   = var.dns_server_list
-      dns_suffix_list   = [var.dns_search_domain]
+      ipv4_gateway      = var.vm_ipv4_gateway
+      dns_server_list   = var.vm_dns_server_list
+      dns_suffix_list   = var.vm_dns_suffix_list
     }
   }
-  extra_config = {
-    "guestinfo.metadata"          = base64encode(templatefile("./templates/metadata.yaml", local.templatevars))
-    "guestinfo.metadata.encoding" = "base64"
-    "guestinfo.userdata"          = base64encode(templatefile("./templates/userdata.yaml", local.templatevars))
-    "guestinfo.userdata.encoding" = "base64"
+  connection {
+    type        = "ssh"
+    target_platform = "unix"
+    port        = 22
+    host        = var.vm_ipv4_address
+    user        = var.vm_ssh_user
+    private_key = file(var.vm_ssh_user_private_key)
   }
-  #lifecycle {
-    #ignore_changes = [
-      #annotation,
-      #clone[0].template_uuid,
-      #clone[0].customize[0].dns_server_list,
-      #clone[0].customize[0].network_interface[0]
-    #]
-  #}
+  provisioner "file" {
+    source      = "${path.module}/scripts"
+    destination = "/tmp/terraform_scripts"
+  }
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt update", 
+      "sudo apt dist-upgrade -y" ,
+      "sudo chmod u+x /tmp/terraform_scripts/*.sh",
+      "/tmp/terraform_scripts/add-public-ssh-key.sh \"${tls_private_key.ssh_key.public_key_openssh}\"",
+    ]
+  }
 }

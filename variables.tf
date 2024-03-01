@@ -41,44 +41,44 @@ variable "vsphere_template_folder" {
 # Virtual Machine 
 variable "vm_name" {
   type        = string
-  description = "The name of the vSphere virtual machines and the hostname of the machine"
+  description = "The name of the vSphere virtual machine and the hostname of the machine"
 }
 
 variable "vm_datastore" {
   type        = string
-  description = "Datastore to use for the VM"
+  description = "The name of the VMware vSphere Datastore where the virtual machine will be stored"
 }
 
 variable "vm_network" {
   type        = string
-  description = "Network to use for the VM"
+  description = "The name of the VMware vSphere Network to which the virtual machine will be connected"
 }
 
 variable "vm_linked_clone" {
   type        = bool
-  description = "Use linked clone to create the vSphere virtual machine from the template"
+  description = "Indicates whether to use a linked clone to create the vSphere virtual machine from the template"
   default     = false
 }
 
-variable "cpu" {
+variable "vm_cpu" {
   type        = number
   description = "Number of vCPU allocated to the VM"
   default     = 2
 }
 
-variable "cores_per_socket" {
+variable "vm_cores_per_socket" {
   type        = number
-  description = "Number of Cores per CPU allocated to the VM"
+  description = "Number of cores per CPU socket allocated to the VM"
   default     = 1
 }
 
-variable "ram" {
+variable "vm_ram" {
   type        = number
-  description = "Amount of RAM allocated to the VM"
+  description = "Amount of RAM allocated to the VM (in MB)"
   default     = 2048
 }
 
-variable "disksize" {
+variable "vm_disk_size" {
   type        = number
   description = "Disk size allocated to the VM (in GB)"
   default     = 30
@@ -91,56 +91,57 @@ variable "vm_guest_id" {
 
 variable "vm_template_name" {
   type        = string
-  description = "The template used to create the VM"
+  description = "The name of the template used to create the virtual machine in VMware vSphere"
 }
 
 variable "vm_domain" {
   type        = string
-  description = "The domain name for the host. This, along with host_name, make up the FQDN of the VM"
+  description = "The domain name for the host. This, along with vm_name, make up the FQDN of the VM"
   nullable    = true
 }
 
-variable "dns_server_list" {
+variable "vm_dns_server_list" {
   type        = list(string)
-  description = "List of DNS servers"
+  description = "A list of DNS servers to be configured for the virtual machine"
   default     = ["8.8.8.8", "8.8.4.4"]
 }
 
-variable "dns_search_domain" {
-  type        = string
-  description = "Define the DNS search domain for the VM"
+variable "vm_dns_suffix_list" {
+  type        = list(string)
+  description = "A list of DNS suffixes to be configured for the virtual machine"
   nullable    = true
 }
 
-variable "ipv4_address" {
+variable "vm_ipv4_address" {
   type        = string
-  description = "Define the IPv4 Address for the VM"
+  description = "The IPv4 address to be assigned to the virtual machine"
 }
 
-variable "ipv4_gateway" {
+variable "vm_ipv4_gateway" {
   type        = string
-  description = "Define the IPv4 Gateway for the VM"  
+  description = "The IPv4 gateway address for the virtual machine"  
 }
 
-variable "ipv4_netmask" {
+variable "vm_ipv4_netmask" {
   type        = number
-  description = "Define the IPv4 Netmask for the VM. Use the CIDR notation"
+  description = "The IPv4 netmask for the virtual machine, specified in CIDR notation"
   default     = 24
 }
 
-variable "ssh_username" {
+variable "vm_ssh_user" {
   type      = string
+  description = "The SSH username used for connecting to the virtual machine during provisioning"
   sensitive = true
 }
 
-variable "public_key" {
-  type        = string
-  description = "Specify the path to the public key file. The content will be added to the authorized_keys file of the ssh user into the VM"
+variable "vm_ssh_user_private_key" { 
+  type = string 
+  description = "The path to the private key file used for SSH authentication to the virtual machine during provisioning"
 }
 
 variable "vm_tz" {
   type      = string
-  description = "Sets the time zone"
+  description = "Sets the time zone for the virtual machine"
   sensitive = true
   default = "Europe/Paris"
 }
