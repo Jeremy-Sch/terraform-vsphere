@@ -106,10 +106,11 @@ variable "dns_server_list" {
   default     = ["8.8.8.8", "8.8.4.4"]
 }
 
-variable "dns_search_domain" {
-  type        = string
-  description = "Define the DNS search domain for the VM"
+variable "dns_suffix_list" {
+  type        = list(string)
+  description = "List of DNS search domains"
   nullable    = true
+  default     = ["home.lab"]
 }
 
 variable "ipv4_address" {
@@ -136,6 +137,11 @@ variable "ssh_username" {
 variable "public_key" {
   type        = string
   description = "Specify the path to the public key file. The content will be added to the authorized_keys file of the ssh user into the VM"
+}
+
+variable "private_key" { 
+  type = string 
+  description = "Specify the path to the private key file. This will be used to complete post-deployment tasks"
 }
 
 variable "vm_tz" {

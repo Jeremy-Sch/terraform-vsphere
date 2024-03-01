@@ -14,20 +14,6 @@ provider "vsphere" {
   allow_unverified_ssl = var.vsphere_unverified_ssl
 }
 
-locals {
-  templatevars = {
-    name         = var.vm_name,
-    ipv4_address = var.ipv4_address,
-    ipv4_gateway = var.ipv4_gateway,
-    ipv4_netmask = var.ipv4_netmask,
-    dns_server_1 = var.dns_server_list[0],
-    dns_server_2 = var.dns_server_list[1],
-    dns_search_domain = var.dns_search_domain,
-    public_key = file(var.public_key),
-    ssh_username = var.ssh_username
-  }
-}
-
 data "vsphere_datacenter" "dc" {
   name = var.vsphere_datacenter
 }
@@ -53,9 +39,9 @@ data "vsphere_virtual_machine" "template" {
 }
 
 resource "vsphere_virtual_machine" "vm" {
-  name             = var.vm_name
-  resource_pool_id = data.vsphere_compute_cluster.cluster.resource_pool_id
-  datastore_id     = data.vsphere_datastore.datastore.id
+  name                 = var.vm_name
+  resource_pool_id     = data.vsphere_compute_cluster.cluster.resource_pool_id
+  datastore_id         = data.vsphere_datastore.datastore.id
   num_cpus             = var.cpu
   num_cores_per_socket = var.cores_per_socket
   memory               = var.ram
@@ -70,9 +56,6 @@ resource "vsphere_virtual_machine" "vm" {
     eagerly_scrub    = data.vsphere_virtual_machine.template.disks.0.eagerly_scrub
     size             = var.disksize == "" ? data.vsphere_virtual_machine.template.disks.0.size : var.disksize 
   }
-  #cdrom {
-    #client_device = true
-  #}
   clone {
     template_uuid = data.vsphere_virtual_machine.template.id
     customize {
@@ -80,7 +63,6 @@ resource "vsphere_virtual_machine" "vm" {
         host_name       = var.vm_name
         domain		= var.vm_domain
         time_zone       = var.vm_tz
-        script_text     = file("./templates/customization_script.sh") 
       }
       network_interface {
         ipv4_address	= var.ipv4_address 
@@ -88,21 +70,27 @@ resource "vsphere_virtual_machine" "vm" {
       }
       ipv4_gateway      = var.ipv4_gateway
       dns_server_list   = var.dns_server_list
-      dns_suffix_list   = [var.dns_search_domain]
+      dns_suffix_list   = var.dns_suffix_list
     }
   }
-  extra_config = {
-    "guestinfo.metadata"          = base64encode(templatefile("./templates/metadata.yaml", local.templatevars))
-    "guestinfo.metadata.encoding" = "base64"
-    "guestinfo.userdata"          = base64encode(templatefile("./templates/userdata.yaml", local.templatevars))
-    "guestinfo.userdata.encoding" = "base64"
+}
+
+resource "null_resource" "post_vm_creation_tasks" {
+  depends_on = [vsphere_virtual_machine.vm]
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt update", 
+      "sudo apt dist-upgrade -y"    
+    ]
+    connection {
+      type        = "ssh"
+      user        = var.ssh_username
+      private_key = file(var.private_key)
+      host        = var.ipv4_address
+    }
   }
-  #lifecycle {
-    #ignore_changes = [
-      #annotation,
-      #clone[0].template_uuid,
-      #clone[0].customize[0].dns_server_list,
-      #clone[0].customize[0].network_interface[0]
-    #]
-  #}
+  triggers = {
+    network_is_ready = vsphere_virtual_machine.vm.default_ip_address
+  }
 }
