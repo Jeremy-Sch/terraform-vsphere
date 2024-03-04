@@ -25,4 +25,5 @@ vm_ipv4_address           = "your_vm_ipv4_address"
 vm_ipv4_gateway           = "your_vm_ipv4_gateway"
 vm_ipv4_netmask           = 24
 vm_ssh_user               = "your_ssh_username"
+vm_ssh_user_private_key   = "your_ssh_private_key_file"
 vm_tz                     = "your_timezone"
