@@ -22,8 +22,17 @@ data "vsphere_virtual_machine" "template" {
   datacenter_id = data.vsphere_datacenter.dc.id
 }
 
-resource "tls_private_key" "ssh_key" {
-  algorithm = "ED25519"
+resource "random_password" "password" {
+  length           = 24
+  special          = true
+  numeric          = true
+  lower            = true
+  upper            = true
+  min_special      = 1
+  min_numeric      = 1
+  min_lower        = 1
+  min_upper        = 1
+  override_special = "!#$%&*=+:?"
 }
 
 resource "vsphere_virtual_machine" "vm" {
@@ -34,6 +43,7 @@ resource "vsphere_virtual_machine" "vm" {
   num_cores_per_socket = var.vm_cores_per_socket
   memory               = var.vm_ram
   guest_id             = var.vm_guest_id
+  firmware             = "efi"
   network_interface {
     network_id   = data.vsphere_network.network.id
     adapter_type = data.vsphere_virtual_machine.template.network_interface_types[0]
@@ -42,44 +52,32 @@ resource "vsphere_virtual_machine" "vm" {
     label            = "${var.vm_name}-disk"
     thin_provisioned = data.vsphere_virtual_machine.template.disks.0.thin_provisioned
     eagerly_scrub    = data.vsphere_virtual_machine.template.disks.0.eagerly_scrub
-    size             = var.vm_disk_size == "" ? data.vsphere_virtual_machine.template.disks.0.size : var.vm_disk_size 
+    size             = var.vm_disk_size == "" ? data.vsphere_virtual_machine.template.disks.0.size : var.vm_disk_size
   }
   clone {
     template_uuid = data.vsphere_virtual_machine.template.id
-    linked_clone = var.vm_linked_clone
+    linked_clone  = var.vm_linked_clone
     customize {
-      linux_options {
-        host_name       = var.vm_name
-        domain		    = var.vm_domain
-        time_zone       = var.vm_tz
+      windows_options {
+        computer_name         = var.vm_name
+        admin_password        = var.vm_password == "" ? random_password.password.result : var.vm_password
+        join_domain           = var.vm_domain
+        domain_admin_user     = var.vm_domain_admin_user
+        domain_admin_password = var.vm_domain_admin_password
+        auto_logon            = true
+        auto_logon_count      = 1
+        time_zone             = var.vm_tz
+        organization_name     = var.vm_organization
+        run_once_command_list = [
+          "cmd.exe /C gpupdate /force"
+        ]
       }
       network_interface {
-        ipv4_address	= var.vm_ipv4_address 
-        ipv4_netmask	= var.vm_ipv4_netmask
+        ipv4_address    = var.vm_ipv4_address
+        ipv4_netmask    = var.vm_ipv4_netmask
+        dns_server_list = var.vm_dns_server_list
       }
-      ipv4_gateway      = var.vm_ipv4_gateway
-      dns_server_list   = var.vm_dns_server_list
-      dns_suffix_list   = var.vm_dns_suffix_list
+      ipv4_gateway = var.vm_ipv4_gateway
     }
-  }
-  connection {
-    type        = "ssh"
-    target_platform = "unix"
-    port        = 22
-    host        = var.vm_ipv4_address
-    user        = var.vm_ssh_user
-    private_key = file(var.vm_ssh_user_private_key)
-  }
-  provisioner "file" {
-    source      = "${path.module}/scripts"
-    destination = "/tmp/terraform_scripts"
-  }
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt update", 
-      "sudo apt dist-upgrade -y" ,
-      "sudo chmod u+x /tmp/terraform_scripts/*.sh",
-      "/tmp/terraform_scripts/add-public-ssh-key.sh \"${tls_private_key.ssh_key.public_key_openssh}\"",
-    ]
   }
 }

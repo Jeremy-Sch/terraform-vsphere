@@ -106,12 +106,6 @@ variable "vm_dns_server_list" {
   default     = ["8.8.8.8", "8.8.4.4"]
 }
 
-variable "vm_dns_suffix_list" {
-  type        = list(string)
-  description = "A list of DNS suffixes to be configured for the virtual machine"
-  nullable    = true
-}
-
 variable "vm_ipv4_address" {
   type        = string
   description = "The IPv4 address to be assigned to the virtual machine"
@@ -119,7 +113,7 @@ variable "vm_ipv4_address" {
 
 variable "vm_ipv4_gateway" {
   type        = string
-  description = "The IPv4 gateway address for the virtual machine"  
+  description = "The IPv4 gateway address for the virtual machine"
 }
 
 variable "vm_ipv4_netmask" {
@@ -128,20 +122,32 @@ variable "vm_ipv4_netmask" {
   default     = 24
 }
 
-variable "vm_ssh_user" {
-  type      = string
-  description = "The SSH username used for connecting to the virtual machine during provisioning"
-  sensitive = true
+variable "vm_organization" {
+  type        = string
+  description = "The organization or entity responsible for managing the virtual machine"
 }
 
-variable "vm_ssh_user_private_key" { 
-  type = string 
-  description = "The path to the private key file used for SSH authentication to the virtual machine during provisioning"
+variable "vm_domain_admin_user" {
+  type        = string
+  sensitive   = true
+  description = "The username of the domain administrator account for joining the Windows virtual machine to the Active Directory domain"
+}
+
+variable "vm_domain_admin_password" {
+  type        = string
+  sensitive   = true
+  description = "The password for the domain administrator account used to join the Windows virtual machine to the Active Directory domain"
 }
 
 variable "vm_tz" {
-  type      = string
+  type        = number
   description = "Sets the time zone for the virtual machine"
-  sensitive = true
-  default = "Europe/Paris"
+  default     = 105 # Europe/Paris
 }
+
+variable "vm_password" {
+  type        = string
+  sensitive   = true
+  description = "The password for the Windows virtual machine's local administrator account."
+}
+
