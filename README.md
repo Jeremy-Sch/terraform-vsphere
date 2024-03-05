@@ -1,6 +1,6 @@
-# Terraform VMware vSphere Linux Virtual Machine Deployment
+# Terraform VMware vSphere Windows Virtual Machine Deployment
 
-This Terraform project is designed to deploy linux virtual machines on VMware vSphere. It includes configurations for vCenter, virtual machine settings, and customization options.
+This Terraform project is designed to deploy windows virtual machines on VMware vSphere. It includes configurations for vCenter, virtual machine settings, and customization options.
 
 ## Prerequisites
 
@@ -16,7 +16,6 @@ Before you begin, ensure you have the following:
 - `variables.tf`: Declaration of variables used in the project.
 - `output.tf`: Configuration for output values.
 - `terraform.tfvars`: Variable values specific to your environment.
-- `vsphere.tfvars`: Variable values for vSphere configuration.
 
 ## Variables
 
@@ -43,13 +42,13 @@ Before you begin, ensure you have the following:
 - `vm_guest_id`: The vCenter GuestOS ID, which determines the operating system type
 - `vm_template_name`: The name of the template used to create the virtual machine in VMware vSphere
 - `vm_domain`: The domain name for the host. This, along with `vm_name`, makes up the FQDN of the VM (Nullable)
+- `vm_domain_admin_user`: The username of the domain administrator account for joining the Windows virtual machine to the Active Directory domain
+- `vm_domain_admin_password`: The password for the domain administrator account used to join the Windows virtual machine to the Active Directory domain
 - `vm_dns_server_list`: A list of DNS servers to be configured for the virtual machine (Default: `["8.8.8.8", "8.8.4.4"]`)
-- `vm_dns_suffix_list`: A list of DNS suffixes to be configured for the virtual machine (Nullable)
 - `vm_ipv4_address`: The IPv4 address to be assigned to the virtual machine
 - `vm_ipv4_gateway`: The IPv4 gateway address for the virtual machine
 - `vm_ipv4_netmask`: The IPv4 netmask for the virtual machine, specified in CIDR notation (Default: `24`)
-- `vm_ssh_user`: The SSH username used for connecting to the virtual machine during provisioning
-- `vm_ssh_user_private_key`: The path to the private key file used for SSH authentication to the virtual machine during provisioning
+- `vm_password`: The password for the Windows virtual machine's local administrator account
 - `vm_tz`: Sets the time zone for the virtual machine (Default: `Europe/Paris`)
 
 ## Usage
